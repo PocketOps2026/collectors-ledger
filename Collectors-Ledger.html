@@ -36,6 +36,7 @@
   .nav-btn[data-page="funko"]{--nav-color:var(--pink);}
   .nav-btn[data-page="coins"]{--nav-color:var(--yellow);}
   .nav-btn[data-page="toys"]{--nav-color:var(--cyan);}
+  .nav-btn[data-page="memorabilia"]{--nav-color:var(--green);}
   .nav-icon{font-size:17px;}
   .sidebar-footer{margin-top:auto;display:flex;flex-direction:column;gap:7px;padding-top:16px;border-top:2px solid var(--border);}
   .sidebar-footer button{background:var(--card);border:1.5px solid var(--border);color:var(--text);padding:9px 11px;border-radius:10px;font-size:12.5px;font-weight:600;cursor:pointer;text-align:left;}
@@ -87,6 +88,7 @@
   .badge.sold{background:var(--green);color:#08321f;}
   .badge.traded{background:var(--pink);color:#fff;}
   .badge.wishlist{background:var(--yellow);color:#3a2c00;}
+  .badge.listed{background:var(--cyan);color:#052e28;}
   .empty-state{text-align:center;padding:60px 20px;color:var(--muted);}
   .empty-state .big{font-size:44px;margin-bottom:10px;}
   /* Modal */
@@ -166,6 +168,7 @@
     <button class="nav-btn" data-page="funko"><span class="nav-icon">🧍</span>Funko Pops</button>
     <button class="nav-btn" data-page="coins"><span class="nav-icon">🪙</span>Coins &amp; Bullion</button>
     <button class="nav-btn" data-page="toys"><span class="nav-icon">🧸</span>Toys</button>
+    <button class="nav-btn" data-page="memorabilia"><span class="nav-icon">🎽</span>Memorabilia</button>
     <div class="sidebar-footer">
       <button id="helpBtn">❓ Help / Guide</button>
       <button id="exportBtn">⬇️ Export Backup</button>
@@ -183,13 +186,14 @@
 
 /* ========================= CONFIG ========================= */
 
-const TYPES = ['cards','funko','coins','toys'];
+const TYPES = ['cards','funko','coins','toys','memorabilia'];
 
 const TYPE_META = {
   cards: {label:'Trading Cards', icon:'🃏', desc:'Sports & TCG cards — track sets, players, grades and values.'},
   funko: {label:'Funko Pops', icon:'🧍', desc:'Vinyl figures — track series, exclusivity and box condition.'},
   coins: {label:'Coins & Bullion', icon:'🪙', desc:'Coins, bars and rounds — track mint, metal, weight and grade.'},
-  toys:  {label:'Toys', icon:'🧸', desc:'Action figures, die-cast and more — track line, condition and edition.'}
+  toys:  {label:'Toys', icon:'🧸', desc:'Action figures, die-cast and more — track line, condition and edition.'},
+  memorabilia: {label:'Memorabilia', icon:'🎽', desc:'Autographs, game-used relics & more — track authentication and provenance.'}
 };
 
 // Field configs: rendered dynamically in the add/edit form, with help text under every input.
@@ -233,6 +237,15 @@ const CATEGORY_CONFIG = {
     {key:'year', label:'Year', type:'number', help:'Year of release.'},
     {key:'condition', label:'Condition', type:'select', options:['MOC (Mint on Card)','MIB (Mint in Box)','Loose - Complete','Loose - Incomplete','Damaged'], help:'Packaging/condition status — a major driver of toy value.'},
     {key:'edition', label:'Edition / Variant', type:'text', help:'Special edition or variant details, e.g. "Chase", "1st Edition", "Error Piece".'}
+  ],
+  memorabilia: [
+    {key:'category', label:'Category', type:'select', options:['Autograph','Game-Used Jersey','Game-Used Equipment','Photo','Ticket Stub','Trophy / Award','Other'], help:'What kind of memorabilia this is.'},
+    {key:'player', label:'Player / Celebrity', type:'text', help:'The athlete, celebrity, or figure associated with this item.'},
+    {key:'team', label:'Team', type:'text', help:'Team, if applicable.'},
+    {key:'event', label:'Event / Occasion', type:'text', help:'The game, event, or occasion this item is from, e.g. "2023 World Series Game 4".'},
+    {key:'authentication', label:'Authentication', type:'select', options:['None / Unauthenticated','COA (Certificate of Authenticity)','PSA/DNA','JSA','Beckett (BAS)','League-Authenticated (MLB/NFL/NBA)','Other'], help:'Who verified this item is genuine, if anyone. Unauthenticated items are usually worth significantly less.'},
+    {key:'authNumber', label:'Authentication / Cert #', type:'text', help:'The certificate or hologram number, if provided — handy for verifying later.'},
+    {key:'condition', label:'Condition', type:'select', options:['Mint','Excellent','Good','Fair','Poor'], help:'Overall physical condition of the item.'}
   ]
 };
 
@@ -440,14 +453,24 @@ function itemsForType(type){
   return ALL_ITEMS.filter(i=>i.type===type);
 }
 
+// "Listed" items are still physically owned (just up for sale), so they count
+// alongside "owned" for ownership/value totals. Only "wishlist" (not yet bought)
+// and items no longer in hand (sold/traded) are excluded from different totals.
+function isOwnedLike(item){
+  return item.status === 'owned' || item.status === 'listed';
+}
 function totalSpent(items){
-  return items.reduce((s,i)=> s + (Number(i.purchasePrice)||0), 0);
+  // Wishlist items haven't actually been bought yet, so they don't count as spend.
+  return items.filter(i=> i.status !== 'wishlist').reduce((s,i)=> s + (Number(i.purchasePrice)||0), 0);
 }
 function totalCurrentValue(items){
-  return items.filter(i=>i.status==='owned').reduce((s,i)=> s + (Number(i.currentValue)||0), 0);
+  return items.filter(isOwnedLike).reduce((s,i)=> s + (Number(i.currentValue)||0), 0);
 }
 function totalSaleProceeds(items){
   return items.filter(i=>i.status==='sold').reduce((s,i)=> s + (Number(i.salePrice)||0), 0);
+}
+function totalActiveListings(items){
+  return items.filter(i=>i.status==='listed').length;
 }
 
 /* ========================= NAVIGATION ========================= */
@@ -482,8 +505,9 @@ function renderDashboard(){
   const spent = totalSpent(ALL_ITEMS);
   const value = totalCurrentValue(ALL_ITEMS);
   const soldProceeds = totalSaleProceeds(ALL_ITEMS);
-  const ownedCount = ALL_ITEMS.filter(i=>i.status==='owned').length;
-  const gain = value - ALL_ITEMS.filter(i=>i.status==='owned').reduce((s,i)=>s+(Number(i.purchasePrice)||0),0);
+  const activeListings = totalActiveListings(ALL_ITEMS);
+  const ownedCount = ALL_ITEMS.filter(isOwnedLike).length;
+  const gain = value - ALL_ITEMS.filter(isOwnedLike).reduce((s,i)=>s+(Number(i.purchasePrice)||0),0);
 
   const typeRows = TYPES.map(t=>{
     const items = itemsForType(t);
@@ -508,6 +532,7 @@ function renderDashboard(){
       <div class="stat-card"><div class="label">Current Est. Value</div><div class="value">${fmtCurrency(value)}</div></div>
       <div class="stat-card"><div class="label">Unrealized Gain / Loss</div><div class="value ${gain>=0?'green':'red'}">${gain>=0?'+':''}${fmtCurrency(gain)}</div></div>
       <div class="stat-card"><div class="label">Total Sale Proceeds</div><div class="value">${fmtCurrency(soldProceeds)}</div></div>
+      <div class="stat-card"><div class="label">Active Listings</div><div class="value" style="color:var(--cyan);">${activeListings}</div></div>
     </div>
     <div class="dash-grid">
       <div class="panel">
@@ -532,7 +557,7 @@ function renderDashboardChart(){
   const data = TYPES.map(t=> totalCurrentValue(itemsForType(t)));
   chartInstance = new Chart(canvas, {
     type: 'doughnut',
-    data:{ labels, datasets:[{ data, backgroundColor:['#ff7a1a','#ff2f92','#ffd60a','#00e5c0'], borderWidth:2, borderColor:'#150a2b' }] },
+    data:{ labels, datasets:[{ data, backgroundColor:['#ff7a1a','#ff2f92','#ffd60a','#00e5c0','#3ecf8e'], borderWidth:2, borderColor:'#150a2b' }] },
     options:{ plugins:{ legend:{ position:'bottom', labels:{ color:'#e8ecf5', font:{size:11} } } } }
   });
 }
@@ -591,6 +616,7 @@ function renderCollectionPage(type){
       <select id="statusFilter">
         <option value="">All Statuses</option>
         <option value="owned" ${filters.status==='owned'?'selected':''}>Owned</option>
+        <option value="listed" ${filters.status==='listed'?'selected':''}>Listed For Sale</option>
         <option value="sold" ${filters.status==='sold'?'selected':''}>Sold</option>
         <option value="traded" ${filters.status==='traded'?'selected':''}>Traded</option>
         <option value="wishlist" ${filters.status==='wishlist'?'selected':''}>Wishlist</option>
@@ -617,14 +643,19 @@ function renderCollectionPage(type){
 
 function renderItemCard(type, item){
   const img = item.thumb;
+  let metaText = subtitleFor(type, item);
+  if(item.status==='listed' && item.listingStage) metaText += ' · ' + item.listingStage;
+  let shownValue = item.currentValue;
+  if(item.status==='sold') shownValue = item.salePrice;
+  else if(item.status==='listed' && item.listingPrice) shownValue = item.listingPrice;
   return `
     <div class="item-card" data-id="${item.id}">
       <div class="item-thumb">${img ? `<img src="${img}" alt="" loading="lazy">` : TYPE_META[type].icon}</div>
       <div class="item-body">
         <div class="item-title">${esc(item.name || 'Untitled')}</div>
-        <div class="item-meta">${esc(subtitleFor(type, item))}</div>
+        <div class="item-meta">${esc(metaText)}</div>
         <div class="item-foot">
-          <span class="item-value">${fmtCurrency(item.status==='sold' ? item.salePrice : item.currentValue)}</span>
+          <span class="item-value">${fmtCurrency(shownValue)}</span>
           <span class="badge ${item.status}">${item.status}</span>
         </div>
       </div>
@@ -638,6 +669,7 @@ function subtitleFor(type, item){
   if(type==='funko') return [f.license, f.character].filter(Boolean).join(' · ') || 'Funko Pop';
   if(type==='coins') return [f.year, f.metal, f.denomination].filter(Boolean).join(' · ') || 'Coin / Bullion';
   if(type==='toys') return [f.brand, f.character].filter(Boolean).join(' · ') || 'Toy';
+  if(type==='memorabilia') return [f.player, f.category, f.event].filter(Boolean).join(' · ') || 'Memorabilia';
   return '';
 }
 
@@ -762,12 +794,31 @@ async function openItemModal(type, itemId){
               <label>Status</label>
               <select name="status" id="statusSelect">
                 <option value="owned" ${status==='owned'?'selected':''}>Owned</option>
+                <option value="listed" ${status==='listed'?'selected':''}>Listed For Sale</option>
                 <option value="sold" ${status==='sold'?'selected':''}>Sold</option>
                 <option value="traded" ${status==='traded'?'selected':''}>Traded</option>
                 <option value="wishlist" ${status==='wishlist'?'selected':''}>Wishlist</option>
               </select>
-              <div class="help">Set to "Sold" or "Traded" to log the details below. "Wishlist" excludes it from spend/value totals.</div>
+              <div class="help">"Listed For Sale" tracks an active auction/listing pipeline. Set to "Sold" or "Traded" to log final details. "Wishlist" excludes it from spend/value totals.</div>
             </div>
+          </div>
+
+          <div id="listedFields" style="display:${status==='listed'?'grid':'none'};gap:14px;grid-template-columns:1fr 1fr;">
+            <div class="field"><label>Date Listed</label><input type="date" name="dateListed" value="${item?.dateListed||''}"><div class="help">When you put it up for sale.</div></div>
+            <div class="field"><label>Platform</label><input type="text" name="listingPlatform" value="${item?.listingPlatform||''}" placeholder="eBay"><div class="help">Where it's listed — eBay, a show, a Facebook group, etc.</div></div>
+            <div class="field">
+              <label>Listing Stage</label>
+              <select name="listingStage">
+                <option value="">— Select —</option>
+                <option value="Active (No Bids)" ${item?.listingStage==='Active (No Bids)'?'selected':''}>Active (No Bids)</option>
+                <option value="Has Bids" ${item?.listingStage==='Has Bids'?'selected':''}>Has Bids</option>
+                <option value="Awaiting Payment" ${item?.listingStage==='Awaiting Payment'?'selected':''}>Awaiting Payment</option>
+                <option value="Ready to Ship" ${item?.listingStage==='Ready to Ship'?'selected':''}>Ready to Ship</option>
+              </select>
+              <div class="help">Where this listing is at right now — update it as bids/payment come in so your queue stays organized.</div>
+            </div>
+            <div class="field"><label>Current Bid / Asking Price ($)</label><input type="number" name="listingPrice" value="${item?.listingPrice||''}"><div class="help">The current high bid, or your asking price if it's a fixed listing.</div></div>
+            <div class="field" style="grid-column:1/-1;"><label>Listing Link</label><input type="text" name="listingUrl" value="${item?.listingUrl||''}" placeholder="https://www.ebay.com/itm/..."><div class="help">Paste the auction/listing URL so you can jump straight to it later.</div></div>
           </div>
 
           <div id="saleFields" style="display:${status==='sold'?'grid':'none'};gap:14px;grid-template-columns:1fr 1fr;">
@@ -808,6 +859,7 @@ async function openItemModal(type, itemId){
   document.getElementById('uploadZone').addEventListener('click', ()=> document.getElementById('imageInput').click());
   document.getElementById('imageInput').addEventListener('change', handleImageUpload);
   document.getElementById('statusSelect').addEventListener('change', (e)=>{
+    document.getElementById('listedFields').style.display = e.target.value==='listed' ? 'grid' : 'none';
     document.getElementById('saleFields').style.display = e.target.value==='sold' ? 'grid' : 'none';
     document.getElementById('tradeFields').style.display = e.target.value==='traded' ? 'grid' : 'none';
   });
@@ -839,6 +891,7 @@ function buildSearchQuery(type){
   else if(type === 'funko') extraKeys = ['license','character','popNumber'];
   else if(type === 'coins') extraKeys = ['year','denomination','metal','country'];
   else if(type === 'toys') extraKeys = ['brand','character','edition'];
+  else if(type === 'memorabilia') extraKeys = ['player','team','event','category'];
   const extra = extraKeys.map(k=> (fd.get(k)||'').trim()).filter(Boolean).join(' ');
   return [name, extra].filter(Boolean).join(' ').trim();
 }
@@ -919,6 +972,11 @@ async function handleFormSubmit(e, type){
     source: fd.get('source') || '',
     currentValue: newCurrentValue,
     valueHistory,
+    dateListed: fd.get('dateListed') || '',
+    listingPlatform: fd.get('listingPlatform') || '',
+    listingStage: fd.get('listingStage') || '',
+    listingPrice: Number(fd.get('listingPrice')) || 0,
+    listingUrl: fd.get('listingUrl') || '',
     dateSold: fd.get('dateSold') || '',
     salePrice: Number(fd.get('salePrice')) || 0,
     salePlatform: fd.get('salePlatform') || '',
@@ -1018,7 +1076,7 @@ function openHelpModal(){
         <div class="modal-sub">A quick guide to every part of the app.</div>
         <div class="help-content">
           <h4>Collections</h4>
-          <p>Use the sidebar to switch between Trading Cards, Funko Pops, Coins &amp; Bullion, and Toys. Each has its own page, its own item list, and its own set of relevant fields — so a card's "Grade" and a coin's "Metal" don't get mixed up.</p>
+          <p>Use the sidebar to switch between Trading Cards, Funko Pops, Coins &amp; Bullion, Toys, and Memorabilia. Each has its own page, its own item list, and its own set of relevant fields — so a card's "Grade" and a coin's "Metal" don't get mixed up.</p>
           <h4>Adding items</h4>
           <p>Click "+ Add Item" on any collection page. Every field in the form has small gray help text underneath explaining exactly what to enter. Only the item name is required — fill in as much or as little else as you like.</p>
           <h4>Photos</h4>
@@ -1027,6 +1085,8 @@ function openHelpModal(){
           <p>In the Add/Edit form, the "Check Real Market Value" box has two buttons: one opens PriceCharting.com's price guide, the other opens eBay sold/completed listings — both pre-filled with the item's name and details, in a new tab. These pull from actual sale data, not an AI guess. Review the results yourself, then type your own number into "Current Estimated Value." There's no automated, always-free API for real-time card/collectible pricing, so this one-click research step is the most reliable non-AI approach.</p>
           <h4>Values &amp; spending</h4>
           <p>Enter what you paid under Acquisition, and your best estimate of current worth under "Current Estimated Value." Every time you update the value, the change is saved to that item's value history (visible when you re-open the item) so you can see how it's trended over time.</p>
+          <h4>Selling pipeline (active listings)</h4>
+          <p>If you list an item for sale before it actually sells — like an eBay auction — set its Status to "Listed For Sale." A "Listing Stage" field lets you track where it's at: Active (No Bids), Has Bids, Awaiting Payment, or Ready to Ship, plus the current bid/asking price and a link back to the listing. It still counts as owned (you still have it in hand) until you switch it to "Sold." The Dashboard shows an "Active Listings" count so you can see your whole selling queue at a glance — handy if you've got a lot of auctions running at once.</p>
           <h4>Selling &amp; trading</h4>
           <p>Change an item's Status to "Sold" or "Traded" and matching fields appear for sale price/platform or trade partner/details. Sold items count toward "Total Sale Proceeds" on the dashboard instead of your current value total. "Wishlist" items are excluded from your spend and value totals entirely — handy for tracking things you want.</p>
           <h4>Filtering &amp; search</h4>
