@@ -1,0 +1,1067 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>StashDex — Collector's Catalog</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%23ff2f92'/%3E%3Cstop offset='50%25' stop-color='%238b5cf6'/%3E%3Cstop offset='100%25' stop-color='%23ff7a1a'/%3E%3C/linearGradient%3E%3C/defs%3E%3Ccircle cx='50' cy='50' r='46' fill='url(%23g)'/%3E%3Ccircle cx='50' cy='50' r='36' fill='%231c0e38'/%3E%3Cpath d='M50 24 L58 42 L78 44 L63 57 L67 77 L50 66 L33 77 L37 57 L22 44 L42 42 Z' fill='%23ffd60a' stroke='white' stroke-width='1.5'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg-grad: linear-gradient(160deg,#1a0b32 0%, #2b0f4d 45%, #150a2b 100%);
+    --sidebar: linear-gradient(190deg,#1f0f3d 0%, #170a2e 100%);
+    --card:#241246; --card-hover:#341a63;
+    --border:#4a2a7a; --text:#fdf5ff; --muted:#b79ee0;
+    --pink:#ff2f92; --purple:#8b5cf6; --orange:#ff7a1a; --yellow:#ffd60a; --cyan:#00e5c0;
+    --green:#3ecf8e; --red:#ff4d6d; --gray:#9d8ac2;
+    --accent:#ff2f92; --accent-dark:#e0217e;
+    --radius:16px;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:'Poppins',-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:var(--bg-grad);background-attachment:fixed;color:var(--text);}
+  h1,h2,h3,h4{font-family:'Fredoka','Poppins',sans-serif;}
+  #app{display:flex;min-height:100vh;}
+  /* Sidebar */
+  #sidebar{width:236px;background:var(--sidebar);border-right:2px solid var(--border);display:flex;flex-direction:column;padding:20px 14px;position:fixed;top:0;bottom:0;left:0;overflow-y:auto;}
+  .logo-row{display:flex;align-items:center;gap:10px;margin:2px 6px 6px;}
+  .logo-row svg{flex-shrink:0;filter:drop-shadow(0 0 8px rgba(255,47,146,.5));}
+  #sidebar h1{font-size:20px;margin:0;font-weight:700;line-height:1.1;background:linear-gradient(90deg,#ff2f92,#8b5cf6 55%,#ff7a1a);-webkit-background-clip:text;background-clip:text;color:transparent;}
+  .tagline{font-size:10.5px;color:var(--muted);margin:0 6px 20px;letter-spacing:.06em;text-transform:uppercase;font-weight:600;}
+  .nav-btn{--nav-color: var(--purple);display:flex;align-items:center;gap:10px;background:none;border:none;border-left:4px solid transparent;color:var(--muted);text-align:left;padding:10px 11px;border-radius:10px;cursor:pointer;font-size:14px;font-weight:600;margin-bottom:4px;width:100%;transition:all .12s;}
+  .nav-btn:hover{background:var(--card-hover);color:var(--text);border-left-color:var(--nav-color);}
+  .nav-btn.active{background:var(--nav-color);color:#150a2b;border-left-color:var(--nav-color);box-shadow:0 0 18px -2px var(--nav-color);}
+  .nav-btn[data-page="dashboard"]{--nav-color:var(--purple);}
+  .nav-btn[data-page="cards"]{--nav-color:var(--orange);}
+  .nav-btn[data-page="funko"]{--nav-color:var(--pink);}
+  .nav-btn[data-page="coins"]{--nav-color:var(--yellow);}
+  .nav-btn[data-page="toys"]{--nav-color:var(--cyan);}
+  .nav-icon{font-size:17px;}
+  .sidebar-footer{margin-top:auto;display:flex;flex-direction:column;gap:7px;padding-top:16px;border-top:2px solid var(--border);}
+  .sidebar-footer button{background:var(--card);border:1.5px solid var(--border);color:var(--text);padding:9px 11px;border-radius:10px;font-size:12.5px;font-weight:600;cursor:pointer;text-align:left;}
+  .sidebar-footer button:hover{background:var(--card-hover);border-color:var(--pink);}
+  /* Main */
+  #content{margin-left:236px;flex:1;padding:28px 34px;max-width:1200px;}
+  .page-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:22px;flex-wrap:wrap;gap:12px;}
+  .page-header h2{margin:0;font-size:26px;font-weight:700;}
+  .page-sub{color:var(--muted);font-size:13px;margin-top:4px;}
+  .btn{background:linear-gradient(135deg,var(--pink),var(--purple));color:#fff;border:none;padding:11px 18px;border-radius:12px;font-size:13.5px;font-weight:700;cursor:pointer;box-shadow:0 4px 14px -2px rgba(255,47,146,.45);transition:transform .1s, box-shadow .1s;}
+  .btn:hover{transform:translateY(-1px);box-shadow:0 6px 18px -2px rgba(255,47,146,.6);}
+  .btn.secondary{background:var(--card);border:1.5px solid var(--border);color:var(--text);box-shadow:none;}
+  .btn.secondary:hover{background:var(--card-hover);border-color:var(--cyan);transform:none;}
+  .btn.danger{background:linear-gradient(135deg,var(--red),#c81d47);}
+  .btn.small{padding:7px 12px;font-size:12px;}
+  /* Dashboard */
+  .stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:26px;}
+  .stat-card{background:var(--card);border:1.5px solid var(--border);border-radius:var(--radius);padding:16px 18px;position:relative;overflow:hidden;}
+  .stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:4px;background:linear-gradient(90deg,var(--pink),var(--purple),var(--orange));}
+  .stat-card .label{color:var(--muted);font-size:11.5px;text-transform:uppercase;letter-spacing:.05em;font-weight:600;}
+  .stat-card .value{font-size:25px;font-weight:700;margin-top:6px;font-family:'Fredoka',sans-serif;color:var(--yellow);}
+  .stat-card .value.green{color:var(--green);}
+  .stat-card .value.red{color:var(--red);}
+  .dash-grid{display:grid;grid-template-columns:1.3fr 1fr;gap:18px;}
+  @media(max-width:900px){.dash-grid{grid-template-columns:1fr;}}
+  .panel{background:var(--card);border:1.5px solid var(--border);border-radius:var(--radius);padding:18px;}
+  .panel h3{margin:0 0 14px;font-size:16px;}
+  .type-row{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:1px solid var(--border);font-size:13.5px;}
+  .type-row:last-child{border-bottom:none;}
+  .type-row .tname{display:flex;align-items:center;gap:8px;font-weight:600;}
+  /* Filters */
+  .filter-bar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px;align-items:center;}
+  .filter-bar input, .filter-bar select{background:var(--card);border:1.5px solid var(--border);color:var(--text);padding:9px 11px;border-radius:10px;font-size:13px;}
+  .filter-bar input[type="text"]{flex:1;min-width:160px;}
+  .filter-bar input:focus, .filter-bar select:focus{outline:none;border-color:var(--pink);}
+  /* Item grid */
+  .item-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px;}
+  .item-card{background:var(--card);border:1.5px solid var(--border);border-radius:var(--radius);overflow:hidden;cursor:pointer;transition:transform .12s, border-color .12s, box-shadow .12s;}
+  .item-card:hover{border-color:var(--pink);transform:translateY(-3px);box-shadow:0 8px 22px -6px rgba(255,47,146,.5);}
+  .item-thumb{width:100%;height:150px;background:linear-gradient(160deg,#170a2e,#241246);display:flex;align-items:center;justify-content:center;overflow:hidden;color:var(--muted);font-size:36px;}
+  .item-thumb img{width:100%;height:100%;object-fit:cover;}
+  .item-body{padding:11px 13px;}
+  .item-title{font-size:13.5px;font-weight:700;margin-bottom:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .item-meta{font-size:11.5px;color:var(--muted);margin-bottom:8px;}
+  .item-foot{display:flex;justify-content:space-between;align-items:center;}
+  .item-value{font-size:14.5px;font-weight:700;color:var(--yellow);}
+  .badge{font-size:10px;padding:4px 9px;border-radius:20px;font-weight:700;text-transform:uppercase;letter-spacing:.03em;}
+  .badge.owned{background:var(--purple);color:#fff;}
+  .badge.sold{background:var(--green);color:#08321f;}
+  .badge.traded{background:var(--pink);color:#fff;}
+  .badge.wishlist{background:var(--yellow);color:#3a2c00;}
+  .empty-state{text-align:center;padding:60px 20px;color:var(--muted);}
+  .empty-state .big{font-size:44px;margin-bottom:10px;}
+  /* Modal */
+  .modal-overlay{position:fixed;inset:0;background:rgba(8,4,18,.78);display:flex;align-items:flex-start;justify-content:center;padding:36px 16px;overflow-y:auto;z-index:100;}
+  .modal{background:var(--sidebar);border:2px solid var(--border);border-radius:20px;width:100%;max-width:620px;padding:26px 26px 20px;box-shadow:0 20px 60px -10px rgba(255,47,146,.25);}
+  .modal h3{margin:0 0 4px;font-size:20px;}
+  .modal .modal-sub{color:var(--muted);font-size:12.5px;margin-bottom:18px;}
+  .field{margin-bottom:16px;}
+  .field label{display:block;font-size:13px;font-weight:700;margin-bottom:5px;}
+  .field .req{color:var(--red);}
+  .field input[type="text"], .field input[type="number"], .field input[type="date"], .field select, .field textarea{
+    width:100%;background:var(--card);border:1.5px solid var(--border);color:var(--text);padding:9px 11px;border-radius:10px;font-size:13.5px;font-family:inherit;
+  }
+  .field input:focus, .field select:focus, .field textarea:focus{outline:none;border-color:var(--pink);}
+  .field textarea{resize:vertical;min-height:60px;}
+  .field .help{color:var(--muted);font-size:11.5px;margin-top:4px;line-height:1.4;}
+  .field.checkbox-field{display:flex;align-items:center;gap:8px;}
+  .field.checkbox-field label{margin-bottom:0;}
+  .field-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+  @media(max-width:520px){.field-row{grid-template-columns:1fr;}}
+  .section-title{font-size:12px;text-transform:uppercase;letter-spacing:.06em;font-weight:700;color:var(--cyan);margin:22px 0 12px;padding-top:14px;border-top:1px solid var(--border);}
+  .section-title:first-child{margin-top:0;padding-top:0;border-top:none;}
+  .modal-actions{display:flex;justify-content:space-between;align-items:center;margin-top:22px;padding-top:16px;border-top:1px solid var(--border);}
+  .modal-actions .left-actions{display:flex;gap:8px;}
+  .modal-actions .right-actions{display:flex;gap:8px;}
+  .close-x{position:absolute;top:18px;right:22px;background:none;border:none;color:var(--muted);font-size:22px;cursor:pointer;}
+  .modal{position:relative;}
+  /* Image upload */
+  .image-upload-zone{border:2px dashed var(--border);border-radius:12px;padding:14px;text-align:center;cursor:pointer;background:var(--card);font-weight:600;}
+  .image-upload-zone:hover{border-color:var(--pink);color:var(--pink);}
+  .image-preview-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;}
+  .image-preview{position:relative;width:70px;height:70px;border-radius:10px;overflow:hidden;border:1.5px solid var(--border);}
+  .image-preview img{width:100%;height:100%;object-fit:cover;}
+  .image-preview .rm{position:absolute;top:2px;right:2px;background:rgba(0,0,0,.7);color:#fff;border:none;width:18px;height:18px;border-radius:50%;font-size:11px;cursor:pointer;line-height:1;}
+  /* Market value lookup */
+  .lookup-box{background:var(--card);border:1.5px dashed var(--cyan);border-radius:12px;padding:12px 14px;margin-bottom:16px;}
+  .lookup-box label{display:block;font-size:13px;font-weight:700;margin-bottom:8px;color:var(--cyan);}
+  .lookup-btns{display:flex;gap:8px;flex-wrap:wrap;}
+  /* Detail view */
+  .detail-grid{display:grid;grid-template-columns:220px 1fr;gap:20px;}
+  @media(max-width:520px){.detail-grid{grid-template-columns:1fr;}}
+  .detail-images img{width:100%;border-radius:10px;margin-bottom:8px;border:1.5px solid var(--border);}
+  .detail-facts{display:grid;grid-template-columns:1fr 1fr;gap:10px 16px;font-size:13px;margin-top:6px;}
+  .detail-facts .fk{color:var(--muted);}
+  .value-history{margin-top:8px;font-size:12.5px;}
+  .value-history-row{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border);}
+  /* Help modal */
+  .help-content h4{font-size:14px;margin:16px 0 6px;color:var(--pink);}
+  .help-content h4:first-child{margin-top:0;}
+  .help-content p{font-size:13px;color:var(--text);line-height:1.6;margin:0 0 8px;}
+  .toast{position:fixed;bottom:22px;right:22px;background:var(--card);border:1.5px solid var(--pink);color:var(--text);padding:12px 18px;border-radius:10px;font-size:13px;font-weight:600;z-index:200;box-shadow:0 6px 20px rgba(255,47,146,.3);}
+</style>
+</head>
+<body>
+<div id="app">
+  <nav id="sidebar">
+    <div class="logo-row">
+      <svg width="38" height="38" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="logoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#ff2f92"/>
+            <stop offset="50%" stop-color="#8b5cf6"/>
+            <stop offset="100%" stop-color="#ff7a1a"/>
+          </linearGradient>
+        </defs>
+        <circle cx="50" cy="50" r="46" fill="url(#logoGrad)"/>
+        <circle cx="50" cy="50" r="36" fill="#1c0e38"/>
+        <path d="M50 24 L58 42 L78 44 L63 57 L67 77 L50 66 L33 77 L37 57 L22 44 L42 42 Z" fill="#ffd60a" stroke="#fff" stroke-width="1.5"/>
+        <circle cx="82" cy="18" r="3.5" fill="#00e5c0"/>
+        <circle cx="16" cy="78" r="2.5" fill="#ff2f92"/>
+      </svg>
+      <h1>StashDex</h1>
+    </div>
+    <div class="tagline">Catalog Your Collection</div>
+    <button class="nav-btn active" data-page="dashboard"><span class="nav-icon">📊</span>Dashboard</button>
+    <button class="nav-btn" data-page="cards"><span class="nav-icon">🃏</span>Trading Cards</button>
+    <button class="nav-btn" data-page="funko"><span class="nav-icon">🧍</span>Funko Pops</button>
+    <button class="nav-btn" data-page="coins"><span class="nav-icon">🪙</span>Coins &amp; Bullion</button>
+    <button class="nav-btn" data-page="toys"><span class="nav-icon">🧸</span>Toys</button>
+    <div class="sidebar-footer">
+      <button id="helpBtn">❓ Help / Guide</button>
+      <button id="exportBtn">⬇️ Export Backup</button>
+      <button id="importBtn">⬆️ Import Backup</button>
+      <input type="file" id="importFile" accept="application/json" style="display:none">
+    </div>
+  </nav>
+  <main id="content"></main>
+</div>
+<div id="modalRoot"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<script>
+(function(){
+"use strict";
+
+/* ========================= CONFIG ========================= */
+
+const TYPES = ['cards','funko','coins','toys'];
+
+const TYPE_META = {
+  cards: {label:'Trading Cards', icon:'🃏', desc:'Sports & TCG cards — track sets, players, grades and values.'},
+  funko: {label:'Funko Pops', icon:'🧍', desc:'Vinyl figures — track series, exclusivity and box condition.'},
+  coins: {label:'Coins & Bullion', icon:'🪙', desc:'Coins, bars and rounds — track mint, metal, weight and grade.'},
+  toys:  {label:'Toys', icon:'🧸', desc:'Action figures, die-cast and more — track line, condition and edition.'}
+};
+
+// Field configs: rendered dynamically in the add/edit form, with help text under every input.
+const CATEGORY_CONFIG = {
+  cards: [
+    {key:'genre', label:'Genre', type:'select', options:['Sports','Pokémon','Magic: The Gathering','Other TCG','Non-Sport'], help:'Choose "Sports" for athlete cards, or the game name for trading card games (TCG).'},
+    {key:'sport', label:'Sport', type:'text', help:'If a sports card, enter the sport (e.g. Baseball, Basketball, Football). Leave blank for non-sports cards.'},
+    {key:'team', label:'Team', type:'text', help:'The team shown on the card, if applicable (e.g. Yankees, Lakers).'},
+    {key:'player', label:'Player / Character', type:'text', help:'The athlete, character, or subject featured on the card.'},
+    {key:'brand', label:'Brand / Manufacturer', type:'text', help:'The card maker, e.g. Topps, Panini, Upper Deck, Bowman.'},
+    {key:'setName', label:'Set', type:'text', help:'The product or set name, e.g. "2023 Topps Chrome".'},
+    {key:'year', label:'Year', type:'number', help:'The year printed on the card, or the set\'s release year.'},
+    {key:'cardNumber', label:'Card #', type:'text', help:'The number printed on the card, e.g. "#247".'},
+    {key:'parallel', label:'Parallel / Insert', type:'text', help:'Any special version — Refractor, Gold /50, Autograph, etc.'},
+    {key:'gradingCompany', label:'Grading Company', type:'select', options:['Raw (Ungraded)','PSA','BGS','SGC','CGC','Other'], help:'Who graded the card. Choose "Raw" if it has not been professionally graded.'},
+    {key:'grade', label:'Grade', type:'text', help:'The grade given, e.g. "10", "9.5 Gem Mint". Leave blank if raw.'},
+    {key:'rookie', label:'Rookie Card', type:'checkbox', help:'Check this box if it is the player\'s rookie card — helps with filtering later.'}
+  ],
+  funko: [
+    {key:'license', label:'Series / License', type:'text', help:'The franchise the Pop belongs to, e.g. Marvel, Star Wars, Disney.'},
+    {key:'character', label:'Character', type:'text', help:'The character depicted on the figure.'},
+    {key:'popNumber', label:'Pop #', type:'text', help:'The number printed on the box, e.g. "#1343".'},
+    {key:'exclusivity', label:'Exclusivity', type:'select', options:['Common','Chase Variant','Store Exclusive','Convention Exclusive','Limited Edition'], help:'How this figure was distributed — helps track rarity.'},
+    {key:'boxCondition', label:'Box Condition', type:'select', options:['Mint','Good','Shelf Wear','Damaged','Loose (No Box)'], help:'Condition of the box, since box condition heavily affects Funko value.'},
+    {key:'vaulted', label:'Vaulted / Retired', type:'checkbox', help:'Check if this figure has been officially retired ("vaulted") by Funko.'}
+  ],
+  coins: [
+    {key:'itemType', label:'Item Type', type:'select', options:['Coin','Bar','Round','Note'], help:'What form the item takes.'},
+    {key:'country', label:'Country / Mint', type:'text', help:'Country of origin or issuing mint, e.g. United States, Royal Canadian Mint.'},
+    {key:'year', label:'Year', type:'number', help:'The year the item was minted or issued.'},
+    {key:'denomination', label:'Denomination / Name', type:'text', help:'Face value or product name, e.g. "Silver Eagle", "1 oz Gold Bar".'},
+    {key:'metal', label:'Metal', type:'select', options:['Gold','Silver','Platinum','Palladium','Copper','Other / N/A'], help:'The primary precious metal, if applicable.'},
+    {key:'weight', label:'Weight (oz)', type:'number', help:'Weight in troy ounces — used for bullion value tracking.'},
+    {key:'purity', label:'Purity', type:'text', help:'Metal purity/fineness, e.g. ".999", "90% Silver".'},
+    {key:'gradingService', label:'Grading Service', type:'select', options:['Raw (Ungraded)','PCGS','NGC','ANACS','Other'], help:'Who graded the coin, or "Raw" if ungraded.'},
+    {key:'grade', label:'Grade', type:'text', help:'The grade given, e.g. "MS-70", "AU-58".'}
+  ],
+  toys: [
+    {key:'brand', label:'Brand / Line', type:'text', help:'Manufacturer or toy line, e.g. Hot Wheels, LEGO, Star Wars Black Series.'},
+    {key:'character', label:'Character / Model', type:'text', help:'The character, vehicle, or model name.'},
+    {key:'year', label:'Year', type:'number', help:'Year of release.'},
+    {key:'condition', label:'Condition', type:'select', options:['MOC (Mint on Card)','MIB (Mint in Box)','Loose - Complete','Loose - Incomplete','Damaged'], help:'Packaging/condition status — a major driver of toy value.'},
+    {key:'edition', label:'Edition / Variant', type:'text', help:'Special edition or variant details, e.g. "Chase", "1st Edition", "Error Piece".'}
+  ]
+};
+
+const COMMON_TOP_FIELDS = [
+  {key:'name', label:'Item Name / Title', type:'text', required:true, help:'A short title you\'ll recognize in your list, e.g. "2023 Bowman Chrome Jasson Domínguez Auto".'}
+];
+
+const COMMON_ACQUIRE_FIELDS = [
+  {key:'dateAcquired', label:'Date Acquired', type:'date', help:'When you obtained this item.'},
+  {key:'purchasePrice', label:'Purchase Price ($)', type:'number', help:'What you paid, including tax if you want that tracked. Leave blank for gifts/pulls — enter 0.'},
+  {key:'source', label:'Source / Seller', type:'text', help:'Where it came from — eBay, a shop name, a show, a trade partner, etc.'}
+];
+
+const COMMON_VALUE_FIELDS = [
+  {key:'currentValue', label:'Current Estimated Value ($)', type:'number', help:'Your best estimate of what it\'s worth today. Update this anytime — changes are logged in the item\'s value history.'}
+];
+
+const COMMON_TAG_FIELDS = [
+  {key:'tags', label:'Tags', type:'text', help:'Comma-separated keywords for your own search/filtering, e.g. "PC, holiday grail, box break".'},
+  {key:'notes', label:'Notes', type:'textarea', help:'Anything else worth remembering about this item.'}
+];
+
+/* ========================= STATE ========================= */
+
+let DB = null;
+let currentPage = 'dashboard';
+let editingItemId = null; // when modal is open for edit
+let pendingImages = [];   // base64 strings staged in the open form
+
+/* ========================= INDEXEDDB LAYER ========================= */
+
+// Items are stored WITHOUT their full-size photos — each item only carries a small
+// "thumb" string for list views. Full-resolution photos live in a separate 'images'
+// store keyed by item id, and are only loaded when you actually open that item. This
+// keeps loading/scrolling fast even with thousands of items in a collection.
+function openDB(){
+  return new Promise((resolve, reject)=>{
+    const req = indexedDB.open('stashDexDB', 1);
+    req.onupgradeneeded = (e)=>{
+      const db = e.target.result;
+      if(!db.objectStoreNames.contains('items')){
+        const store = db.createObjectStore('items', {keyPath:'id'});
+        store.createIndex('type', 'type', {unique:false});
+      }
+      if(!db.objectStoreNames.contains('images')){
+        db.createObjectStore('images', {keyPath:'id'});
+      }
+    };
+    req.onsuccess = (e)=> resolve(e.target.result);
+    req.onerror = (e)=> reject(e.target.error);
+  });
+}
+
+function dbGetAll(){
+  return new Promise((resolve, reject)=>{
+    const tx = DB.transaction('items','readonly');
+    const req = tx.objectStore('items').getAll();
+    req.onsuccess = ()=> resolve(req.result || []);
+    req.onerror = ()=> reject(req.error);
+  });
+}
+
+function dbPut(item){
+  return new Promise((resolve, reject)=>{
+    const tx = DB.transaction('items','readwrite');
+    tx.objectStore('items').put(item);
+    tx.oncomplete = ()=> resolve();
+    tx.onerror = ()=> reject(tx.error);
+  });
+}
+
+function dbDelete(id){
+  return new Promise((resolve, reject)=>{
+    const tx = DB.transaction('items','readwrite');
+    tx.objectStore('items').delete(id);
+    tx.oncomplete = ()=> resolve();
+    tx.onerror = ()=> reject(tx.error);
+  });
+}
+
+function dbGetImages(id){
+  return new Promise((resolve, reject)=>{
+    const tx = DB.transaction('images','readonly');
+    const req = tx.objectStore('images').get(id);
+    req.onsuccess = ()=> resolve(req.result ? req.result.images : []);
+    req.onerror = ()=> reject(req.error);
+  });
+}
+
+function dbPutImages(id, images){
+  return new Promise((resolve, reject)=>{
+    const tx = DB.transaction('images','readwrite');
+    if(images && images.length){ tx.objectStore('images').put({id, images}); }
+    else { tx.objectStore('images').delete(id); }
+    tx.oncomplete = ()=> resolve();
+    tx.onerror = ()=> reject(tx.error);
+  });
+}
+
+function dbGetAllImages(){
+  return new Promise((resolve, reject)=>{
+    const tx = DB.transaction('images','readonly');
+    const req = tx.objectStore('images').getAll();
+    req.onsuccess = ()=> resolve(req.result || []);
+    req.onerror = ()=> reject(req.error);
+  });
+}
+
+function dbDeleteImages(id){
+  return new Promise((resolve, reject)=>{
+    const tx = DB.transaction('images','readwrite');
+    tx.objectStore('images').delete(id);
+    tx.oncomplete = ()=> resolve();
+    tx.onerror = ()=> reject(tx.error);
+  });
+}
+
+let ALL_ITEMS = [];
+
+async function refreshItems(){
+  ALL_ITEMS = await dbGetAll();
+}
+
+/* ========================= HELPERS ========================= */
+
+function uuid(){
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c=>{
+    const r = Math.random()*16|0, v = c==='x'?r:(r&0x3|0x8);
+    return v.toString(16);
+  });
+}
+
+function fmtCurrency(n){
+  n = Number(n)||0;
+  return '$' + n.toLocaleString('en-US', {minimumFractionDigits:2, maximumFractionDigits:2});
+}
+
+function fmtDate(d){
+  if(!d) return '—';
+  const dt = new Date(d + 'T00:00:00');
+  if(isNaN(dt)) return d;
+  return dt.toLocaleDateString('en-US', {year:'numeric', month:'short', day:'numeric'});
+}
+
+function esc(s){
+  const div = document.createElement('div');
+  div.textContent = s == null ? '' : String(s);
+  return div.innerHTML;
+}
+
+function toast(msg){
+  const t = document.createElement('div');
+  t.className = 'toast';
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(()=> t.remove(), 2600);
+}
+
+function resizeImage(file, maxDim=900, quality=0.75){
+  return new Promise((resolve, reject)=>{
+    const reader = new FileReader();
+    reader.onload = (e)=>{
+      const img = new Image();
+      img.onload = ()=>{
+        let w = img.width, h = img.height;
+        if(w > maxDim || h > maxDim){
+          if(w > h){ h = Math.round(h * maxDim/w); w = maxDim; }
+          else { w = Math.round(w * maxDim/h); h = maxDim; }
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        resolve(canvas.toDataURL('image/jpeg', quality));
+      };
+      img.onerror = reject;
+      img.src = e.target.result;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+// Shrinks an already-loaded image (a full-size dataURL) down to a small thumbnail
+// used only for grid cards, so list views stay light even with thousands of photos.
+function makeThumb(dataUrl, maxDim=220, quality=0.6){
+  return new Promise((resolve)=>{
+    const img = new Image();
+    img.onload = ()=>{
+      let w = img.width, h = img.height;
+      if(w > maxDim || h > maxDim){
+        if(w > h){ h = Math.round(h * maxDim/w); w = maxDim; }
+        else { w = Math.round(w * maxDim/h); h = maxDim; }
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      resolve(canvas.toDataURL('image/jpeg', quality));
+    };
+    img.onerror = ()=> resolve('');
+    img.src = dataUrl;
+  });
+}
+
+function itemsForType(type){
+  return ALL_ITEMS.filter(i=>i.type===type);
+}
+
+function totalSpent(items){
+  return items.reduce((s,i)=> s + (Number(i.purchasePrice)||0), 0);
+}
+function totalCurrentValue(items){
+  return items.filter(i=>i.status==='owned').reduce((s,i)=> s + (Number(i.currentValue)||0), 0);
+}
+function totalSaleProceeds(items){
+  return items.filter(i=>i.status==='sold').reduce((s,i)=> s + (Number(i.salePrice)||0), 0);
+}
+
+/* ========================= NAVIGATION ========================= */
+
+document.querySelectorAll('.nav-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    currentPage = btn.dataset.page;
+    render();
+  });
+});
+
+document.getElementById('helpBtn').addEventListener('click', openHelpModal);
+document.getElementById('exportBtn').addEventListener('click', exportBackup);
+document.getElementById('importBtn').addEventListener('click', ()=> document.getElementById('importFile').click());
+document.getElementById('importFile').addEventListener('change', importBackup);
+
+/* ========================= RENDER: ROUTER ========================= */
+
+function render(){
+  const content = document.getElementById('content');
+  if(currentPage === 'dashboard') content.innerHTML = renderDashboard();
+  else content.innerHTML = renderCollectionPage(currentPage);
+  attachPageEvents();
+  if(currentPage === 'dashboard') renderDashboardChart();
+}
+
+/* ========================= DASHBOARD ========================= */
+
+function renderDashboard(){
+  const spent = totalSpent(ALL_ITEMS);
+  const value = totalCurrentValue(ALL_ITEMS);
+  const soldProceeds = totalSaleProceeds(ALL_ITEMS);
+  const ownedCount = ALL_ITEMS.filter(i=>i.status==='owned').length;
+  const gain = value - ALL_ITEMS.filter(i=>i.status==='owned').reduce((s,i)=>s+(Number(i.purchasePrice)||0),0);
+
+  const typeRows = TYPES.map(t=>{
+    const items = itemsForType(t);
+    const meta = TYPE_META[t];
+    const val = totalCurrentValue(items);
+    return `<div class="type-row">
+      <div class="tname">${meta.icon} ${meta.label}</div>
+      <div>${items.length} items · <strong>${fmtCurrency(val)}</strong></div>
+    </div>`;
+  }).join('');
+
+  return `
+    <div class="page-header">
+      <div>
+        <h2>Dashboard</h2>
+        <div class="page-sub">An overview across all of your collections.</div>
+      </div>
+    </div>
+    <div class="stat-grid">
+      <div class="stat-card"><div class="label">Total Items Owned</div><div class="value">${ownedCount}</div></div>
+      <div class="stat-card"><div class="label">Total Spent</div><div class="value">${fmtCurrency(spent)}</div></div>
+      <div class="stat-card"><div class="label">Current Est. Value</div><div class="value">${fmtCurrency(value)}</div></div>
+      <div class="stat-card"><div class="label">Unrealized Gain / Loss</div><div class="value ${gain>=0?'green':'red'}">${gain>=0?'+':''}${fmtCurrency(gain)}</div></div>
+      <div class="stat-card"><div class="label">Total Sale Proceeds</div><div class="value">${fmtCurrency(soldProceeds)}</div></div>
+    </div>
+    <div class="dash-grid">
+      <div class="panel">
+        <h3>Value by Collection</h3>
+        <canvas id="dashChart" height="180"></canvas>
+      </div>
+      <div class="panel">
+        <h3>Collections</h3>
+        ${typeRows}
+        ${ALL_ITEMS.length===0 ? '<p style="color:var(--muted);font-size:13px;margin-top:10px;">No items yet — pick a collection from the sidebar and add your first item.</p>' : ''}
+      </div>
+    </div>
+  `;
+}
+
+let chartInstance = null;
+function renderDashboardChart(){
+  const canvas = document.getElementById('dashChart');
+  if(!canvas || typeof Chart === 'undefined') return;
+  if(chartInstance) chartInstance.destroy();
+  const labels = TYPES.map(t=>TYPE_META[t].label);
+  const data = TYPES.map(t=> totalCurrentValue(itemsForType(t)));
+  chartInstance = new Chart(canvas, {
+    type: 'doughnut',
+    data:{ labels, datasets:[{ data, backgroundColor:['#ff7a1a','#ff2f92','#ffd60a','#00e5c0'], borderWidth:2, borderColor:'#150a2b' }] },
+    options:{ plugins:{ legend:{ position:'bottom', labels:{ color:'#e8ecf5', font:{size:11} } } } }
+  });
+}
+
+/* ========================= COLLECTION PAGE ========================= */
+
+const PAGE_SIZE = 60; // items rendered per "page" — keeps the grid fast with large collections
+
+function getFilterState(type){
+  window.__filters = window.__filters || {};
+  window.__filters[type] = window.__filters[type] || {search:'', status:'', sort:'newest', visibleCount: PAGE_SIZE};
+  return window.__filters[type];
+}
+
+function renderCollectionPage(type){
+  const meta = TYPE_META[type];
+  const filters = getFilterState(type);
+  let items = itemsForType(type);
+
+  if(filters.search){
+    const q = filters.search.toLowerCase();
+    items = items.filter(i=>{
+      const hay = [i.name, ...(CATEGORY_CONFIG[type].map(f=>i.fields?.[f.key]))].join(' ').toLowerCase();
+      return hay.includes(q);
+    });
+  }
+  if(filters.status){
+    items = items.filter(i=> i.status === filters.status);
+  }
+  items = items.slice().sort((a,b)=>{
+    if(filters.sort==='newest') return (b.createdAt||0)-(a.createdAt||0);
+    if(filters.sort==='oldest') return (a.createdAt||0)-(b.createdAt||0);
+    if(filters.sort==='value-high') return (Number(b.currentValue)||0)-(Number(a.currentValue)||0);
+    if(filters.sort==='value-low') return (Number(a.currentValue)||0)-(Number(b.currentValue)||0);
+    if(filters.sort==='name') return (a.name||'').localeCompare(b.name||'');
+    return 0;
+  });
+
+  const matchCount = items.length;
+  const visible = items.slice(0, filters.visibleCount);
+  const cards = visible.map(i=> renderItemCard(type, i)).join('');
+  const totalVal = totalCurrentValue(itemsForType(type));
+  const totalSp = totalSpent(itemsForType(type));
+  const remaining = matchCount - visible.length;
+
+  return `
+    <div class="page-header">
+      <div>
+        <h2>${meta.icon} ${meta.label}</h2>
+        <div class="page-sub">${meta.desc} · ${itemsForType(type).length} items · ${fmtCurrency(totalVal)} current value · ${fmtCurrency(totalSp)} spent</div>
+      </div>
+      <button class="btn" id="addItemBtn">+ Add Item</button>
+    </div>
+    <div class="filter-bar">
+      <input type="text" id="searchInput" placeholder="Search ${meta.label.toLowerCase()}..." value="${esc(filters.search)}">
+      <select id="statusFilter">
+        <option value="">All Statuses</option>
+        <option value="owned" ${filters.status==='owned'?'selected':''}>Owned</option>
+        <option value="sold" ${filters.status==='sold'?'selected':''}>Sold</option>
+        <option value="traded" ${filters.status==='traded'?'selected':''}>Traded</option>
+        <option value="wishlist" ${filters.status==='wishlist'?'selected':''}>Wishlist</option>
+      </select>
+      <select id="sortFilter">
+        <option value="newest" ${filters.sort==='newest'?'selected':''}>Newest First</option>
+        <option value="oldest" ${filters.sort==='oldest'?'selected':''}>Oldest First</option>
+        <option value="value-high" ${filters.sort==='value-high'?'selected':''}>Value: High to Low</option>
+        <option value="value-low" ${filters.sort==='value-low'?'selected':''}>Value: Low to High</option>
+        <option value="name" ${filters.sort==='name'?'selected':''}>Name A-Z</option>
+      </select>
+    </div>
+    ${matchCount ? `<div class="item-grid">${cards}</div>
+      ${remaining > 0 ? `<div style="text-align:center;margin-top:22px;">
+        <button class="btn secondary" id="loadMoreBtn">Load ${Math.min(remaining, PAGE_SIZE)} More (${remaining} left)</button>
+      </div>` : ''}
+    ` : `
+      <div class="empty-state">
+        <div class="big">${meta.icon}</div>
+        <p>No items match yet. Click "+ Add Item" to start tracking your ${meta.label.toLowerCase()}.</p>
+      </div>`}
+  `;
+}
+
+function renderItemCard(type, item){
+  const img = item.thumb;
+  return `
+    <div class="item-card" data-id="${item.id}">
+      <div class="item-thumb">${img ? `<img src="${img}" alt="" loading="lazy">` : TYPE_META[type].icon}</div>
+      <div class="item-body">
+        <div class="item-title">${esc(item.name || 'Untitled')}</div>
+        <div class="item-meta">${esc(subtitleFor(type, item))}</div>
+        <div class="item-foot">
+          <span class="item-value">${fmtCurrency(item.status==='sold' ? item.salePrice : item.currentValue)}</span>
+          <span class="badge ${item.status}">${item.status}</span>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function subtitleFor(type, item){
+  const f = item.fields || {};
+  if(type==='cards') return [f.year, f.brand, f.player].filter(Boolean).join(' · ') || 'Trading Card';
+  if(type==='funko') return [f.license, f.character].filter(Boolean).join(' · ') || 'Funko Pop';
+  if(type==='coins') return [f.year, f.metal, f.denomination].filter(Boolean).join(' · ') || 'Coin / Bullion';
+  if(type==='toys') return [f.brand, f.character].filter(Boolean).join(' · ') || 'Toy';
+  return '';
+}
+
+function attachPageEvents(){
+  if(currentPage === 'dashboard') return;
+  const type = currentPage;
+  const addBtn = document.getElementById('addItemBtn');
+  if(addBtn) addBtn.addEventListener('click', ()=> openItemModal(type, null));
+
+  const searchInput = document.getElementById('searchInput');
+  if(searchInput) searchInput.addEventListener('input', (e)=>{
+    const f = getFilterState(type);
+    f.search = e.target.value;
+    f.visibleCount = PAGE_SIZE;
+    render();
+    document.getElementById('searchInput').focus();
+    const val = document.getElementById('searchInput').value;
+    document.getElementById('searchInput').setSelectionRange(val.length, val.length);
+  });
+  const statusFilter = document.getElementById('statusFilter');
+  if(statusFilter) statusFilter.addEventListener('change', (e)=>{
+    const f = getFilterState(type);
+    f.status = e.target.value; f.visibleCount = PAGE_SIZE; render();
+  });
+  const sortFilter = document.getElementById('sortFilter');
+  if(sortFilter) sortFilter.addEventListener('change', (e)=>{
+    const f = getFilterState(type);
+    f.sort = e.target.value; f.visibleCount = PAGE_SIZE; render();
+  });
+  const loadMoreBtn = document.getElementById('loadMoreBtn');
+  if(loadMoreBtn) loadMoreBtn.addEventListener('click', ()=>{
+    getFilterState(type).visibleCount += PAGE_SIZE;
+    render();
+  });
+
+  document.querySelectorAll('.item-card').forEach(card=>{
+    card.addEventListener('click', ()=> openItemModal(type, card.dataset.id));
+  });
+}
+
+/* ========================= ITEM FORM MODAL ========================= */
+
+function fieldHTML(f, value){
+  const val = value == null ? '' : value;
+  let input = '';
+  if(f.type === 'select'){
+    input = `<select name="${f.key}">
+      <option value="">— Select —</option>
+      ${f.options.map(o=>`<option value="${esc(o)}" ${val===o?'selected':''}>${esc(o)}</option>`).join('')}
+    </select>`;
+  } else if(f.type === 'textarea'){
+    input = `<textarea name="${f.key}">${esc(val)}</textarea>`;
+  } else if(f.type === 'checkbox'){
+    return `<div class="field checkbox-field">
+      <input type="checkbox" name="${f.key}" id="fld_${f.key}" ${val ? 'checked':''}>
+      <label for="fld_${f.key}">${esc(f.label)}</label>
+      </div><div class="help" style="margin:-12px 0 12px 24px;">${esc(f.help||'')}</div>`;
+  } else {
+    input = `<input type="${f.type}" name="${f.key}" value="${esc(val)}" ${f.step?`step="${f.step}"`:''}>`;
+  }
+  return `<div class="field">
+    <label>${esc(f.label)}${f.required?' <span class="req">*</span>':''}</label>
+    ${input}
+    ${f.help ? `<div class="help">${esc(f.help)}</div>` : ''}
+  </div>`;
+}
+
+async function openItemModal(type, itemId){
+  editingItemId = itemId;
+  const item = itemId ? ALL_ITEMS.find(i=>i.id===itemId) : null;
+  // Full-size photos live in their own store, separate from the lightweight item
+  // record, so they're only fetched here when you actually open an item.
+  pendingImages = item ? await dbGetImages(item.id) : [];
+  const meta = TYPE_META[type];
+  const fields = CATEGORY_CONFIG[type];
+  const status = item ? item.status : 'owned';
+
+  const modalRoot = document.getElementById('modalRoot');
+  modalRoot.innerHTML = `
+    <div class="modal-overlay" id="overlay">
+      <div class="modal">
+        <button class="close-x" id="closeModal">✕</button>
+        <h3>${item ? 'Edit' : 'Add'} ${meta.label.slice(0,-1) === meta.label ? meta.label : meta.label}</h3>
+        <div class="modal-sub">Fields marked * are required. Hover help text under each field explains what to enter.</div>
+        <form id="itemForm">
+
+          <div class="section-title">Basics</div>
+          ${COMMON_TOP_FIELDS.map(f=>fieldHTML(f, item?.name)).join('')}
+
+          <div class="field">
+            <label>Photos</label>
+            <div class="image-upload-zone" id="uploadZone">📷 Click to upload photo(s) of this item</div>
+            <input type="file" id="imageInput" accept="image/*" multiple style="display:none">
+            <div class="image-preview-row" id="previewRow"></div>
+            <div class="help">Add clear photos (front/back, grading label, etc). Images are resized and stored privately in your browser — never uploaded anywhere.</div>
+          </div>
+
+          <div class="section-title">${meta.label} Details</div>
+          <div class="field-row">
+            ${fields.map(f=> `<div style="grid-column: ${f.type==='textarea'?'1 / -1':'auto'}">${fieldHTML(f, item?.fields?.[f.key])}</div>`).join('')}
+          </div>
+
+          <div class="section-title">Acquisition</div>
+          <div class="field-row">
+            ${COMMON_ACQUIRE_FIELDS.map(f=>`<div>${fieldHTML(f, item?.[f.key])}</div>`).join('')}
+          </div>
+
+          <div class="section-title">Value &amp; Status</div>
+
+          <div class="lookup-box">
+            <label>🔎 Check Real Market Value (no AI — actual listings)</label>
+            <div class="lookup-btns">
+              <button type="button" class="btn secondary small" id="lookupPriceCharting">PriceCharting.com</button>
+              <button type="button" class="btn secondary small" id="lookupEbay">eBay Sold Listings</button>
+            </div>
+            <div class="help" style="margin-top:8px;">Opens a search on a real price-guide/sold-listings site in a new tab, built from this item's details. Review the results yourself and type your own estimate into "Current Estimated Value" below.</div>
+          </div>
+
+          <div class="field-row">
+            ${COMMON_VALUE_FIELDS.map(f=>`<div>${fieldHTML(f, item?.[f.key])}</div>`).join('')}
+            <div class="field">
+              <label>Status</label>
+              <select name="status" id="statusSelect">
+                <option value="owned" ${status==='owned'?'selected':''}>Owned</option>
+                <option value="sold" ${status==='sold'?'selected':''}>Sold</option>
+                <option value="traded" ${status==='traded'?'selected':''}>Traded</option>
+                <option value="wishlist" ${status==='wishlist'?'selected':''}>Wishlist</option>
+              </select>
+              <div class="help">Set to "Sold" or "Traded" to log the details below. "Wishlist" excludes it from spend/value totals.</div>
+            </div>
+          </div>
+
+          <div id="saleFields" style="display:${status==='sold'?'grid':'none'};gap:14px;grid-template-columns:1fr 1fr;">
+            <div class="field"><label>Sale Date</label><input type="date" name="dateSold" value="${item?.dateSold||''}"><div class="help">When the item sold.</div></div>
+            <div class="field"><label>Sale Price ($)</label><input type="number" name="salePrice" value="${item?.salePrice||''}"><div class="help">Final amount received, after fees if you want net profit tracked.</div></div>
+            <div class="field"><label>Platform</label><input type="text" name="salePlatform" value="${item?.salePlatform||''}"><div class="help">Where you sold it — eBay, a show, a local sale, etc.</div></div>
+            <div class="field"><label>Buyer</label><input type="text" name="saleBuyer" value="${item?.saleBuyer||''}"><div class="help">Optional — who bought it.</div></div>
+          </div>
+
+          <div id="tradeFields" style="display:${status==='traded'?'grid':'none'};gap:14px;grid-template-columns:1fr 1fr;">
+            <div class="field"><label>Trade Date</label><input type="date" name="dateTraded" value="${item?.dateTraded||''}"><div class="help">When the trade happened.</div></div>
+            <div class="field"><label>Traded With</label><input type="text" name="tradePartner" value="${item?.tradePartner||''}"><div class="help">Who you traded with.</div></div>
+            <div class="field" style="grid-column:1/-1;"><label>Received In Return</label><input type="text" name="tradedFor" value="${item?.tradedFor||''}"><div class="help">What you got in the trade.</div></div>
+          </div>
+
+          <div class="section-title">Organization</div>
+          ${COMMON_TAG_FIELDS.map(f=>fieldHTML(f, item ? (f.key==='tags' ? (item.tags||[]).join(', ') : item[f.key]) : '')).join('')}
+
+          <div class="modal-actions">
+            <div class="left-actions">
+              ${item ? '<button type="button" class="btn danger small" id="deleteItemBtn">Delete</button>' : '<span></span>'}
+            </div>
+            <div class="right-actions">
+              <button type="button" class="btn secondary small" id="cancelModal">Cancel</button>
+              <button type="submit" class="btn small">${item ? 'Save Changes' : 'Add Item'}</button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  `;
+
+  renderImagePreviews();
+
+  document.getElementById('closeModal').addEventListener('click', closeModal);
+  document.getElementById('cancelModal').addEventListener('click', closeModal);
+  document.getElementById('overlay').addEventListener('click', (e)=>{ if(e.target.id==='overlay') closeModal(); });
+  document.getElementById('uploadZone').addEventListener('click', ()=> document.getElementById('imageInput').click());
+  document.getElementById('imageInput').addEventListener('change', handleImageUpload);
+  document.getElementById('statusSelect').addEventListener('change', (e)=>{
+    document.getElementById('saleFields').style.display = e.target.value==='sold' ? 'grid' : 'none';
+    document.getElementById('tradeFields').style.display = e.target.value==='traded' ? 'grid' : 'none';
+  });
+  if(item){
+    document.getElementById('deleteItemBtn').addEventListener('click', ()=> handleDelete(item.id));
+  }
+  document.getElementById('itemForm').addEventListener('submit', (e)=> handleFormSubmit(e, type));
+
+  document.getElementById('lookupPriceCharting').addEventListener('click', ()=>{
+    const q = buildSearchQuery(type);
+    if(!q){ toast('Enter an item name or a few details first.'); return; }
+    window.open(`https://www.pricecharting.com/search-products?q=${encodeURIComponent(q)}&type=prices`, '_blank');
+  });
+  document.getElementById('lookupEbay').addEventListener('click', ()=>{
+    const q = buildSearchQuery(type);
+    if(!q){ toast('Enter an item name or a few details first.'); return; }
+    window.open(`https://www.ebay.com/sch/i.html?_nkw=${encodeURIComponent(q)}&LH_Sold=1&LH_Complete=1`, '_blank');
+  });
+}
+
+// Builds a search string from the form's current values (name + the most identifying
+// category fields) so the market-value lookup buttons return relevant results.
+function buildSearchQuery(type){
+  const form = document.getElementById('itemForm');
+  const fd = new FormData(form);
+  const name = (fd.get('name') || '').trim();
+  let extraKeys = [];
+  if(type === 'cards') extraKeys = ['year','brand','player','setName','cardNumber'];
+  else if(type === 'funko') extraKeys = ['license','character','popNumber'];
+  else if(type === 'coins') extraKeys = ['year','denomination','metal','country'];
+  else if(type === 'toys') extraKeys = ['brand','character','edition'];
+  const extra = extraKeys.map(k=> (fd.get(k)||'').trim()).filter(Boolean).join(' ');
+  return [name, extra].filter(Boolean).join(' ').trim();
+}
+
+async function handleImageUpload(e){
+  const files = Array.from(e.target.files || []);
+  for(const file of files){
+    try{
+      const dataUrl = await resizeImage(file);
+      pendingImages.push(dataUrl);
+    }catch(err){ console.error('Image processing failed', err); }
+  }
+  renderImagePreviews();
+  e.target.value = '';
+}
+
+function renderImagePreviews(){
+  const row = document.getElementById('previewRow');
+  if(!row) return;
+  row.innerHTML = pendingImages.map((img, idx)=>`
+    <div class="image-preview">
+      <img src="${img}" alt="">
+      <button type="button" class="rm" data-idx="${idx}">✕</button>
+    </div>
+  `).join('');
+  row.querySelectorAll('.rm').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      pendingImages.splice(Number(btn.dataset.idx), 1);
+      renderImagePreviews();
+    });
+  });
+}
+
+function closeModal(){
+  document.getElementById('modalRoot').innerHTML = '';
+  editingItemId = null;
+  pendingImages = [];
+}
+
+async function handleFormSubmit(e, type){
+  e.preventDefault();
+  const form = e.target;
+  const fd = new FormData(form);
+
+  const name = fd.get('name')?.trim();
+  if(!name){ toast('Item name is required.'); return; }
+
+  const existing = editingItemId ? ALL_ITEMS.find(i=>i.id===editingItemId) : null;
+  const now = Date.now();
+
+  const fields = {};
+  CATEGORY_CONFIG[type].forEach(f=>{
+    if(f.type === 'checkbox'){ fields[f.key] = fd.get(f.key) === 'on'; }
+    else { fields[f.key] = fd.get(f.key) || ''; }
+  });
+
+  const newCurrentValue = Number(fd.get('currentValue')) || 0;
+  let valueHistory = existing ? (existing.valueHistory || []) : [];
+  if(!existing || Number(existing.currentValue) !== newCurrentValue){
+    valueHistory = valueHistory.concat([{date: new Date().toISOString().slice(0,10), value: newCurrentValue}]);
+  }
+
+  const tagsRaw = fd.get('tags') || '';
+  const tags = tagsRaw.split(',').map(t=>t.trim()).filter(Boolean);
+
+  // Only a small thumbnail is stored on the item itself (for fast grid rendering);
+  // the full-size photos are saved separately, keyed by this item's id.
+  const thumb = pendingImages.length ? await makeThumb(pendingImages[0]) : '';
+
+  const item = {
+    id: existing ? existing.id : uuid(),
+    type,
+    name,
+    thumb,
+    status: fd.get('status'),
+    dateAcquired: fd.get('dateAcquired') || '',
+    purchasePrice: Number(fd.get('purchasePrice')) || 0,
+    source: fd.get('source') || '',
+    currentValue: newCurrentValue,
+    valueHistory,
+    dateSold: fd.get('dateSold') || '',
+    salePrice: Number(fd.get('salePrice')) || 0,
+    salePlatform: fd.get('salePlatform') || '',
+    saleBuyer: fd.get('saleBuyer') || '',
+    dateTraded: fd.get('dateTraded') || '',
+    tradePartner: fd.get('tradePartner') || '',
+    tradedFor: fd.get('tradedFor') || '',
+    tags,
+    notes: fd.get('notes') || '',
+    fields,
+    createdAt: existing ? existing.createdAt : now,
+    updatedAt: now
+  };
+
+  await dbPut(item);
+  await dbPutImages(item.id, pendingImages);
+  await refreshItems();
+  closeModal();
+  render();
+  toast(existing ? 'Item updated.' : 'Item added.');
+}
+
+async function handleDelete(id){
+  if(!confirm('Delete this item permanently? This cannot be undone.')) return;
+  await dbDelete(id);
+  await dbDeleteImages(id);
+  await refreshItems();
+  closeModal();
+  render();
+  toast('Item deleted.');
+}
+
+/* ========================= EXPORT / IMPORT ========================= */
+
+async function exportBackup(){
+  toast('Preparing backup…');
+  const images = await dbGetAllImages();
+  const payload = { exportedAt: new Date().toISOString(), items: ALL_ITEMS, images };
+  const blob = new Blob([JSON.stringify(payload)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `stashdex-backup-${new Date().toISOString().slice(0,10)}.json`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+  toast('Backup downloaded.');
+}
+
+async function importBackup(e){
+  const file = e.target.files[0];
+  if(!file) return;
+  try{
+    const text = await file.text();
+    const payload = JSON.parse(text);
+    const items = payload.items || payload; // support raw array too
+    const imageEntries = payload.images || [];
+    if(!Array.isArray(items)) throw new Error('Invalid file');
+    if(!confirm(`Import ${items.length} items? This will add to (not replace) your current collection.`)) return;
+    const imageMap = new Map(imageEntries.map(en=>[en.id, en.images]));
+    for(const item of items){
+      if(!item.id) item.id = uuid();
+      // Backwards-compatible with older single-file backups that embedded full-size
+      // photos directly on the item (pre-thumbnail-split format).
+      if(item.images && item.images.length && !imageMap.has(item.id)){
+        imageMap.set(item.id, item.images);
+      }
+      delete item.images;
+      if(!item.thumb && imageMap.has(item.id) && imageMap.get(item.id).length){
+        item.thumb = await makeThumb(imageMap.get(item.id)[0]);
+      }
+      await dbPut(item);
+      if(imageMap.has(item.id)){
+        await dbPutImages(item.id, imageMap.get(item.id));
+      }
+    }
+    await refreshItems();
+    render();
+    toast(`Imported ${items.length} items.`);
+  }catch(err){
+    console.error(err);
+    toast('Import failed — file may not be a valid backup.');
+  }
+  e.target.value = '';
+}
+
+/* ========================= HELP MODAL ========================= */
+
+function openHelpModal(){
+  const modalRoot = document.getElementById('modalRoot');
+  modalRoot.innerHTML = `
+    <div class="modal-overlay" id="overlay">
+      <div class="modal" style="max-width:640px;">
+        <button class="close-x" id="closeModal">✕</button>
+        <h3>How to use StashDex</h3>
+        <div class="modal-sub">A quick guide to every part of the app.</div>
+        <div class="help-content">
+          <h4>Collections</h4>
+          <p>Use the sidebar to switch between Trading Cards, Funko Pops, Coins &amp; Bullion, and Toys. Each has its own page, its own item list, and its own set of relevant fields — so a card's "Grade" and a coin's "Metal" don't get mixed up.</p>
+          <h4>Adding items</h4>
+          <p>Click "+ Add Item" on any collection page. Every field in the form has small gray help text underneath explaining exactly what to enter. Only the item name is required — fill in as much or as little else as you like.</p>
+          <h4>Photos</h4>
+          <p>Click the photo upload box to attach one or more images (front, back, grading label, etc). Photos are resized and stored entirely inside your browser — they are never uploaded to a server.</p>
+          <h4>Checking market value (no AI)</h4>
+          <p>In the Add/Edit form, the "Check Real Market Value" box has two buttons: one opens PriceCharting.com's price guide, the other opens eBay sold/completed listings — both pre-filled with the item's name and details, in a new tab. These pull from actual sale data, not an AI guess. Review the results yourself, then type your own number into "Current Estimated Value." There's no automated, always-free API for real-time card/collectible pricing, so this one-click research step is the most reliable non-AI approach.</p>
+          <h4>Values &amp; spending</h4>
+          <p>Enter what you paid under Acquisition, and your best estimate of current worth under "Current Estimated Value." Every time you update the value, the change is saved to that item's value history (visible when you re-open the item) so you can see how it's trended over time.</p>
+          <h4>Selling &amp; trading</h4>
+          <p>Change an item's Status to "Sold" or "Traded" and matching fields appear for sale price/platform or trade partner/details. Sold items count toward "Total Sale Proceeds" on the dashboard instead of your current value total. "Wishlist" items are excluded from your spend and value totals entirely — handy for tracking things you want.</p>
+          <h4>Filtering &amp; search</h4>
+          <p>Each collection page has a search box plus filters for status and sort order. Search checks the item name and all of its category-specific fields (team, brand, character, etc), so you can find items by genre, team, or brand without a dedicated filter for each.</p>
+          <h4>Dashboard</h4>
+          <p>Shows totals across every collection: items owned, amount spent, current estimated value, unrealized gain/loss, and sale proceeds, plus a breakdown chart by collection type.</p>
+          <h4>Backups</h4>
+          <p>All your data (including photos) lives only in this browser. Use "Export Backup" regularly to save a JSON file you can keep safe or move to another computer. "Import Backup" adds items from a backup file into your current collection.</p>
+          <h4>Large collections (thousands of items)</h4>
+          <p>Each collection page loads 60 items at a time with a "Load More" button, and grid thumbnails are stored separately from full-size photos, so browsing stays fast even with a large collection. Full photos load only when you open an item. If a single collection grows very large, using search/status filters will keep things snappier than scrolling through everything.</p>
+        </div>
+      </div>
+    </div>
+  `;
+  document.getElementById('closeModal').addEventListener('click', closeModal);
+  document.getElementById('overlay').addEventListener('click', (e)=>{ if(e.target.id==='overlay') closeModal(); });
+}
+
+/* ========================= INIT ========================= */
+
+async function init(){
+  try{
+    DB = await openDB();
+    await refreshItems();
+  }catch(err){
+    console.error('Failed to open database', err);
+    document.getElementById('content').innerHTML = '<div class="empty-state"><p>This browser does not support local storage (IndexedDB), so the app cannot save data. Try opening this file in an up-to-date Chrome, Edge, or Firefox.</p></div>';
+    return;
+  }
+  render();
+}
+
+init();
+
+})();
+</script>
+</body>
+</html>
