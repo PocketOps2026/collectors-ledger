@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>StashDex — Collector's Catalog</title>
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%23ff2f92'/%3E%3Cstop offset='50%25' stop-color='%238b5cf6'/%3E%3Cstop offset='100%25' stop-color='%23ff7a1a'/%3E%3C/linearGradient%3E%3C/defs%3E%3Ccircle cx='50' cy='50' r='46' fill='url(%23g)'/%3E%3Ccircle cx='50' cy='50' r='36' fill='%231c0e38'/%3E%3Cpath d='M50 24 L58 42 L78 44 L63 57 L67 77 L50 66 L33 77 L37 57 L22 44 L42 42 Z' fill='%23ffd60a' stroke='white' stroke-width='1.5'/%3E%3C/svg%3E">
+<title>GrailKeeper — Collector's Catalog</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Cdefs%3E%3ClinearGradient id='g' x1='0%25' y1='0%25' x2='100%25' y2='100%25'%3E%3Cstop offset='0%25' stop-color='%23ff2f92'/%3E%3Cstop offset='50%25' stop-color='%238b5cf6'/%3E%3Cstop offset='100%25' stop-color='%23ff7a1a'/%3E%3C/linearGradient%3E%3C/defs%3E%3Ccircle cx='50' cy='50' r='46' fill='url(%23g)'/%3E%3Ccircle cx='50' cy='50' r='36' fill='%231c0e38'/%3E%3Cpath d='M32 27 C32 44 40 53 50 53 C60 53 68 44 68 27 Z' fill='%23ffd60a' stroke='white' stroke-width='1.5'/%3E%3Crect x='47' y='53' width='6' height='13' fill='%23ffd60a' stroke='white' stroke-width='1.2'/%3E%3Crect x='35' y='65' width='30' height='7' rx='3.5' fill='%23ffd60a' stroke='white' stroke-width='1.2'/%3E%3Cpath d='M50 10 L53 17 L60 18 L54.5 23 L56 30 L50 26.5 L44 30 L45.5 23 L40 18 L47 17 Z' fill='white'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
@@ -41,8 +41,20 @@
   .sidebar-footer{margin-top:auto;display:flex;flex-direction:column;gap:7px;padding-top:16px;border-top:2px solid var(--border);}
   .sidebar-footer button{background:var(--card);border:1.5px solid var(--border);color:var(--text);padding:9px 11px;border-radius:10px;font-size:12.5px;font-weight:600;cursor:pointer;text-align:left;}
   .sidebar-footer button:hover{background:var(--card-hover);border-color:var(--pink);}
+  /* Mobile top bar (hidden on desktop) */
+  #mobileTopBar{display:none;position:fixed;top:0;left:0;right:0;height:58px;background:var(--sidebar);border-bottom:2px solid var(--border);align-items:center;justify-content:space-between;padding:0 14px;z-index:70;}
+  #mobileTopBar .mtb-brand{display:flex;align-items:center;gap:8px;font-family:'Fredoka',sans-serif;font-weight:700;font-size:16px;background:linear-gradient(90deg,#ff2f92,#8b5cf6 55%,#ff7a1a);-webkit-background-clip:text;background-clip:text;color:transparent;}
+  #mobileMenuBtn{background:var(--card);border:1.5px solid var(--border);color:var(--text);width:40px;height:40px;border-radius:10px;font-size:18px;cursor:pointer;}
+  #sidebarOverlay{display:none;position:fixed;inset:0;background:rgba(5,2,12,.6);z-index:59;}
   /* Main */
   #content{margin-left:236px;flex:1;padding:28px 34px;max-width:1200px;}
+  @media(max-width:860px){
+    #mobileTopBar{display:flex;}
+    #sidebar{position:fixed;top:0;left:0;bottom:0;width:270px;max-width:82vw;transform:translateX(-100%);transition:transform .25s ease;z-index:71;box-shadow:10px 0 40px rgba(0,0,0,.5);padding-top:70px;}
+    #sidebar.open{transform:translateX(0);}
+    #sidebarOverlay.open{display:block;}
+    #content{margin-left:0;padding:78px 16px 28px;max-width:100%;}
+  }
   .page-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:22px;flex-wrap:wrap;gap:12px;}
   .page-header h2{margin:0;font-size:26px;font-weight:700;}
   .page-sub{color:var(--muted);font-size:13px;margin-top:4px;}
@@ -143,6 +155,11 @@
 </style>
 </head>
 <body>
+<div id="mobileTopBar">
+  <div class="mtb-brand"><span id="mtbLogo">🏆</span> <span id="mtbName">GrailKeeper</span></div>
+  <button id="mobileMenuBtn" aria-label="Open menu">☰</button>
+</div>
+<div id="sidebarOverlay"></div>
 <div id="app">
   <nav id="sidebar">
     <div class="logo-row">
@@ -156,11 +173,14 @@
         </defs>
         <circle cx="50" cy="50" r="46" fill="url(#logoGrad)"/>
         <circle cx="50" cy="50" r="36" fill="#1c0e38"/>
-        <path d="M50 24 L58 42 L78 44 L63 57 L67 77 L50 66 L33 77 L37 57 L22 44 L42 42 Z" fill="#ffd60a" stroke="#fff" stroke-width="1.5"/>
+        <path d="M32 27 C32 44 40 53 50 53 C60 53 68 44 68 27 Z" fill="#ffd60a" stroke="#fff" stroke-width="1.5"/>
+        <rect x="47" y="53" width="6" height="13" fill="#ffd60a" stroke="#fff" stroke-width="1.2"/>
+        <rect x="35" y="65" width="30" height="7" rx="3.5" fill="#ffd60a" stroke="#fff" stroke-width="1.2"/>
+        <path d="M50 10 L53 17 L60 18 L54.5 23 L56 30 L50 26.5 L44 30 L45.5 23 L40 18 L47 17 Z" fill="#fff"/>
         <circle cx="82" cy="18" r="3.5" fill="#00e5c0"/>
         <circle cx="16" cy="78" r="2.5" fill="#ff2f92"/>
       </svg>
-      <h1>StashDex</h1>
+      <h1>GrailKeeper</h1>
     </div>
     <div class="tagline">Catalog Your Collection</div>
     <button class="nav-btn active" data-page="dashboard"><span class="nav-icon">📊</span>Dashboard</button>
@@ -283,7 +303,15 @@ let pendingImages = [];   // base64 strings staged in the open form
 // keeps loading/scrolling fast even with thousands of items in a collection.
 function openDB(){
   return new Promise((resolve, reject)=>{
-    const req = indexedDB.open('stashDexDB', 1);
+    // Version 2 adds the 'images' store. Bumping this number is what makes browsers
+    // that already created the database at version 1 (before 'images' existed) run
+    // onupgradeneeded again and get the missing store — without touching existing
+    // 'items' data. If this number is ever bumped again for a future schema change,
+    // it must keep going up (3, 4, ...), never back down.
+    // Internal database name is kept as 'stashDexDB' on purpose even after the app
+    // was renamed to GrailKeeper — it's never shown to users, and changing it would
+    // point everyone at a brand-new empty database, silently losing existing local data.
+    const req = indexedDB.open('stashDexDB', 2);
     req.onupgradeneeded = (e)=>{
       const db = e.target.result;
       if(!db.objectStoreNames.contains('items')){
@@ -475,12 +503,23 @@ function totalActiveListings(items){
 
 /* ========================= NAVIGATION ========================= */
 
+function closeMobileMenu(){
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('sidebarOverlay').classList.remove('open');
+}
+document.getElementById('mobileMenuBtn').addEventListener('click', ()=>{
+  document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('sidebarOverlay').classList.toggle('open');
+});
+document.getElementById('sidebarOverlay').addEventListener('click', closeMobileMenu);
+
 document.querySelectorAll('.nav-btn').forEach(btn=>{
   btn.addEventListener('click', ()=>{
     document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
     btn.classList.add('active');
     currentPage = btn.dataset.page;
     render();
+    closeMobileMenu(); // on phones, picking a page should close the slide-in menu
   });
 });
 
@@ -742,7 +781,13 @@ async function openItemModal(type, itemId){
   const item = itemId ? ALL_ITEMS.find(i=>i.id===itemId) : null;
   // Full-size photos live in their own store, separate from the lightweight item
   // record, so they're only fetched here when you actually open an item.
-  pendingImages = item ? await dbGetImages(item.id) : [];
+  try{
+    pendingImages = item ? await dbGetImages(item.id) : [];
+  }catch(err){
+    console.error('Failed to load photos for item', err);
+    pendingImages = [];
+    toast('Could not load this item\'s photos, but you can still edit its details.');
+  }
   const meta = TYPE_META[type];
   const fields = CATEGORY_CONFIG[type];
   const status = item ? item.status : 'owned';
@@ -1013,18 +1058,23 @@ async function handleDelete(id){
 
 async function exportBackup(){
   toast('Preparing backup…');
-  const images = await dbGetAllImages();
-  const payload = { exportedAt: new Date().toISOString(), items: ALL_ITEMS, images };
-  const blob = new Blob([JSON.stringify(payload)], {type:'application/json'});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `stashdex-backup-${new Date().toISOString().slice(0,10)}.json`;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  URL.revokeObjectURL(url);
-  toast('Backup downloaded.');
+  try{
+    const images = await dbGetAllImages();
+    const payload = { exportedAt: new Date().toISOString(), items: ALL_ITEMS, images };
+    const blob = new Blob([JSON.stringify(payload)], {type:'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `grailkeeper-backup-${new Date().toISOString().slice(0,10)}.json`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+    toast('Backup downloaded.');
+  }catch(err){
+    console.error('Export failed', err);
+    toast('Export failed — try reloading the page and exporting again.');
+  }
 }
 
 async function importBackup(e){
@@ -1072,7 +1122,7 @@ function openHelpModal(){
     <div class="modal-overlay" id="overlay">
       <div class="modal" style="max-width:640px;">
         <button class="close-x" id="closeModal">✕</button>
-        <h3>How to use StashDex</h3>
+        <h3>How to use GrailKeeper</h3>
         <div class="modal-sub">A quick guide to every part of the app.</div>
         <div class="help-content">
           <h4>Collections</h4>
