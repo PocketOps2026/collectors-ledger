@@ -371,6 +371,7 @@ const COMMON_TAG_FIELDS = [
 /* ========================= STATE ========================= */
 
 let DB = null;
+let dbReadyPromise = null;
 let currentPage = 'dashboard';
 let editingItemId = null; // when modal is open for edit
 let pendingImages = [];   // base64 strings staged in the open form
@@ -406,50 +407,74 @@ function openDB(){
         db.createObjectStore('breaks', {keyPath:'id'});
       }
     };
+    req.onblocked = ()=>{
+      toast('Waiting on another open tab of this app to finish updating — close other tabs of this page, then reload.', 8000);
+    };
     req.onsuccess = (e)=> resolve(e.target.result);
     req.onerror = (e)=> reject(e.target.error);
   });
 }
 
-function dbGetAll(){
+// Every db* helper below awaits this before touching anything, instead of reading the
+// module-level DB variable directly. It's memoized (openDB() only ever actually runs
+// once) and resolves the moment the database is ready. This matters because the
+// Import/Export buttons (and other actions) are wired up to their click handlers as
+// soon as the page parses — before init()'s "DB = await openDB()" has necessarily
+// finished — so a fast click right after load could previously call DB.transaction()
+// while DB was still null, throwing "Cannot read properties of null (reading
+// 'transaction')". Routing every db* call through ensureDB() means it just waits for
+// the database instead of failing.
+function ensureDB(){
+  if(!dbReadyPromise){
+    dbReadyPromise = openDB().then((db)=>{ DB = db; return db; });
+  }
+  return dbReadyPromise;
+}
+
+async function dbGetAll(){
+  const db = await ensureDB();
   return new Promise((resolve, reject)=>{
-    const tx = DB.transaction('items','readonly');
+    const tx = db.transaction('items','readonly');
     const req = tx.objectStore('items').getAll();
     req.onsuccess = ()=> resolve(req.result || []);
     req.onerror = ()=> reject(req.error);
   });
 }
 
-function dbPut(item){
+async function dbPut(item){
+  const db = await ensureDB();
   return new Promise((resolve, reject)=>{
-    const tx = DB.transaction('items','readwrite');
+    const tx = db.transaction('items','readwrite');
     tx.objectStore('items').put(item);
     tx.oncomplete = ()=> resolve();
     tx.onerror = ()=> reject(tx.error);
   });
 }
 
-function dbDelete(id){
+async function dbDelete(id){
+  const db = await ensureDB();
   return new Promise((resolve, reject)=>{
-    const tx = DB.transaction('items','readwrite');
+    const tx = db.transaction('items','readwrite');
     tx.objectStore('items').delete(id);
     tx.oncomplete = ()=> resolve();
     tx.onerror = ()=> reject(tx.error);
   });
 }
 
-function dbGetImages(id){
+async function dbGetImages(id){
+  const db = await ensureDB();
   return new Promise((resolve, reject)=>{
-    const tx = DB.transaction('images','readonly');
+    const tx = db.transaction('images','readonly');
     const req = tx.objectStore('images').get(id);
     req.onsuccess = ()=> resolve(req.result ? req.result.images : []);
     req.onerror = ()=> reject(req.error);
   });
 }
 
-function dbPutImages(id, images){
+async function dbPutImages(id, images){
+  const db = await ensureDB();
   return new Promise((resolve, reject)=>{
-    const tx = DB.transaction('images','readwrite');
+    const tx = db.transaction('images','readwrite');
     if(images && images.length){ tx.objectStore('images').put({id, images}); }
     else { tx.objectStore('images').delete(id); }
     tx.oncomplete = ()=> resolve();
@@ -457,45 +482,50 @@ function dbPutImages(id, images){
   });
 }
 
-function dbGetAllImages(){
+async function dbGetAllImages(){
+  const db = await ensureDB();
   return new Promise((resolve, reject)=>{
-    const tx = DB.transaction('images','readonly');
+    const tx = db.transaction('images','readonly');
     const req = tx.objectStore('images').getAll();
     req.onsuccess = ()=> resolve(req.result || []);
     req.onerror = ()=> reject(req.error);
   });
 }
 
-function dbDeleteImages(id){
+async function dbDeleteImages(id){
+  const db = await ensureDB();
   return new Promise((resolve, reject)=>{
-    const tx = DB.transaction('images','readwrite');
+    const tx = db.transaction('images','readwrite');
     tx.objectStore('images').delete(id);
     tx.oncomplete = ()=> resolve();
     tx.onerror = ()=> reject(tx.error);
   });
 }
 
-function dbGetAllBreaks(){
+async function dbGetAllBreaks(){
+  const db = await ensureDB();
   return new Promise((resolve, reject)=>{
-    const tx = DB.transaction('breaks','readonly');
+    const tx = db.transaction('breaks','readonly');
     const req = tx.objectStore('breaks').getAll();
     req.onsuccess = ()=> resolve(req.result || []);
     req.onerror = ()=> reject(req.error);
   });
 }
 
-function dbPutBreak(b){
+async function dbPutBreak(b){
+  const db = await ensureDB();
   return new Promise((resolve, reject)=>{
-    const tx = DB.transaction('breaks','readwrite');
+    const tx = db.transaction('breaks','readwrite');
     tx.objectStore('breaks').put(b);
     tx.oncomplete = ()=> resolve();
     tx.onerror = ()=> reject(tx.error);
   });
 }
 
-function dbDeleteBreak(id){
+async function dbDeleteBreak(id){
+  const db = await ensureDB();
   return new Promise((resolve, reject)=>{
-    const tx = DB.transaction('breaks','readwrite');
+    const tx = db.transaction('breaks','readwrite');
     tx.objectStore('breaks').delete(id);
     tx.oncomplete = ()=> resolve();
     tx.onerror = ()=> reject(tx.error);
@@ -2223,7 +2253,12 @@ async function importBackup(e){
       e.target.value = ''; return;
     }
     const breakWord = breakEntries.length ? ` and ${breakEntries.length} break${breakEntries.length===1?'':'s'}` : '';
-    if(!confirm(`Import ${items.length} items${breakWord}? This will add to (not replace) your current collection.`)) return;
+    const proceed = await openConfirmModal({
+      title: 'Import backup?',
+      message: `Import ${items.length} items${breakWord}? This will add to (not replace) your current collection.`,
+      confirmLabel: 'Import'
+    });
+    if(!proceed) return;
     const imageMap = new Map(imageEntries.map(en=>[en.id, en.images]));
     for(const item of items){
       if(!item.id) item.id = uuid();
@@ -2314,7 +2349,7 @@ function openHelpModal(){
 
 async function init(){
   try{
-    DB = await openDB();
+    await ensureDB();
     await refreshItems();
     await refreshBreaks();
   }catch(err){
